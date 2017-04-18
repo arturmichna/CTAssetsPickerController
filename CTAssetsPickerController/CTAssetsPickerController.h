@@ -142,6 +142,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly, strong) UISplitViewController *childSplitViewController;
 
+/**
+ *  Determines the color of toolBar.
+ *
+ *  You can change the default white color by setting this property.
+ */
+@property (nonatomic, strong) UIColor *toolbarColor;
+
+
 
 /**
  *  @name Managing Selections

@@ -452,7 +452,6 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
     [self updateTitle:selectedAssets];
     [self updateButton:selectedAssets];
     [self updateToolbarItems];
-    [self reloadData];
 }
 
 - (void)updateTitle:(NSArray *)selectedAssets
@@ -703,7 +702,9 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
     [self updateTitle:self.picker.selectedAssets];
     [self updateButton:self.picker.selectedAssets];
     [self updateToolbarItems];
-    [self reloadData];
+ 
+    [self.collectionView reloadItemsAtIndexPaths:[self.collectionView indexPathsForVisibleItems]];
+
 }
 
 - (void)deSelectAllItems
@@ -718,7 +719,8 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
     [self updateTitle:self.picker.selectedAssets];
     [self updateButton:self.picker.selectedAssets];
     [self updateToolbarItems];
-    [self reloadData];
+
+    [self.collectionView reloadItemsAtIndexPaths:[self.collectionView indexPathsForSelectedItems]];
 }
 
 - (BOOL)allItemsAreSelected

@@ -28,8 +28,6 @@
 
 @interface CTAssetCollectionViewController : UITableViewController
 
-@property (nonatomic, strong) UIColor *toolbarColor;
-
 - (void)reloadUserInterface;
 
 @end

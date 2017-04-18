@@ -130,7 +130,6 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
 {
     [super viewDidAppear:animated];
     [self updateCachedAssetImages];
-    self.viewToolbar.barTintColor = self.toolbarColor;
 }
 
 - (void)viewWillLayoutSubviews

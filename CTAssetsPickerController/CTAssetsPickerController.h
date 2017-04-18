@@ -143,6 +143,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, strong) UISplitViewController *childSplitViewController;
 
 
+
 /**
  *  @name Managing Selections
  */

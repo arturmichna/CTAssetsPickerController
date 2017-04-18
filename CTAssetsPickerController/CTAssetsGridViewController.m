@@ -477,10 +477,12 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
     if (self.viewToolbar.items.count == 3) {
         [barButtonItems removeLastObject];
     }
-    if (allItemsSelected) {
-        [barButtonItems addObject:self.deSelectAllItemsBarButton];
-    } else {
-        [barButtonItems addObject:self.selectAllItemsBarButton];
+    if (self.fetchResult.count > 0) {
+        if (allItemsSelected) {
+            [barButtonItems addObject:self.deSelectAllItemsBarButton];
+        } else {
+            [barButtonItems addObject:self.selectAllItemsBarButton];
+        }   
     }
     
     self.viewToolbar.items = barButtonItems;

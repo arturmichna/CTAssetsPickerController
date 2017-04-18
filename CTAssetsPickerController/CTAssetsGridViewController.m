@@ -48,6 +48,8 @@
 NSString * const CTAssetsGridViewCellIdentifier = @"CTAssetsGridViewCellIdentifier";
 NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIdentifier";
 
+CGFloat const CTAssetsGridViewBottomInset = 44.0f;
+
 
 @interface CTAssetsGridViewController ()
 <PHPhotoLibraryChangeObserver>
@@ -63,6 +65,10 @@ NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIden
 @property (nonatomic, strong) CTAssetsPickerNoAssetsView *noAssetsView;
 
 @property (nonatomic, assign) BOOL didLayoutSubviews;
+
+@property (nonatomic, strong) UIToolbar *viewToolbar;
+@property (nonatomic, strong) UIBarButtonItem *selectAllItemsBarButton;
+@property (nonatomic, strong) UIBarButtonItem *deSelectAllItemsBarButton;
 
 @end
 
@@ -106,6 +112,8 @@ NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIden
     [self addGestureRecognizer];
     [self addNotificationObserver];
     [self resetCachedAssetImages];
+    [self setupToolBar];
+    self.collectionView.contentInset = UIEdgeInsetsMake(0.0f, 0.0f, CTAssetsGridViewBottomInset, 0.0f);
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -115,6 +123,7 @@ NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIden
     [self setupAssets];
     [self updateTitle:self.picker.selectedAssets];
     [self updateButton:self.picker.selectedAssets];
+    [self updateToolbarItems];
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -173,6 +182,39 @@ NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIden
     CTAssetsGridView *gridView = [CTAssetsGridView new];
     [self.view insertSubview:gridView atIndex:0];
     [self.view setNeedsUpdateConstraints];
+}
+
+#pragma mark - Setup ToolBar
+- (void)setupToolBar
+{
+    self.viewToolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(
+                                                               0.0f,
+                                                               CGRectGetHeight(self.view.bounds) - CTAssetsGridViewBottomInset,
+                                                               CGRectGetWidth(self.view.bounds),
+                                                               CTAssetsGridViewBottomInset)];
+    
+    UIBarButtonItem *flexibleSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                                                                   target:self
+                                                                                   action:nil];
+    
+    self.selectAllItemsBarButton = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Select All", "")
+                                                                       style:UIBarButtonItemStyleDone
+                                                                      target:self
+                                                                      action:@selector(selectAllItems)];
+    
+    self.deSelectAllItemsBarButton = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Deselect All", "")
+                                                                       style:UIBarButtonItemStyleDone
+                                                                      target:self
+                                                                      action:@selector(deSelectAllItems)];
+    
+    
+    UIBarButtonItem *closePicker = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Cancel", "")
+                                                                    style:UIBarButtonItemStyleDone
+                                                                   target:self
+                                                                   action:@selector(closePicker)];
+    closePicker.tintColor = [UIColor whiteColor];
+    self.viewToolbar.items = @[closePicker, flexibleSpace];
+    [self.view addSubview:self.viewToolbar];
 }
 
 - (void)setupButtons
@@ -404,6 +446,8 @@ NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIden
     NSArray *selectedAssets = (NSArray *)notification.object;
     [self updateTitle:selectedAssets];
     [self updateButton:selectedAssets];
+    [self updateToolbarItems];
+    [self reloadData];
 }
 
 - (void)updateTitle:(NSArray *)selectedAssets
@@ -420,6 +464,21 @@ NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIden
         self.navigationItem.rightBarButtonItem.enabled = YES;
     else
         self.navigationItem.rightBarButtonItem.enabled = (self.picker.selectedAssets.count > 0);
+}
+
+- (void)updateToolbarItems {
+    BOOL allItemsSelected = [self allItemsAreSelected];
+    NSMutableArray <UIBarButtonItem *> *barButtonItems = self.viewToolbar.items.mutableCopy;
+    if (self.viewToolbar.items.count == 3) {
+        [barButtonItems removeLastObject];
+    }
+    if (allItemsSelected) {
+        [barButtonItems addObject:self.deSelectAllItemsBarButton];
+    } else {
+        [barButtonItems addObject:self.selectAllItemsBarButton];
+    }
+    
+    self.viewToolbar.items = barButtonItems;
 }
 
 
@@ -622,6 +681,91 @@ NSString * const CTAssetsGridViewFooterIdentifier = @"CTAssetsGridViewFooterIden
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
     [self updateCachedAssetImages];
+}
+
+- (void)selectAllItems
+{
+    NSString *string = self.assetCollection.localizedTitle;
+    NSArray <PHAsset *> *allAssetArray = [self allAssetsFromCurrentAlbum:string];
+    
+    NSArray <PHAsset *> *toSelect = allAssetArray;
+    NSArray <PHAsset *> *alreadySelected = self.picker.selectedAssets;
+    NSArray <PHAsset *> *result = [self removeDuplicatedAssetsFrom:alreadySelected withAssets:toSelect];
+    
+    [self.picker.selectedAssets addObjectsFromArray:result];
+    [self updateTitle:self.picker.selectedAssets];
+    [self updateButton:self.picker.selectedAssets];
+    [self updateToolbarItems];
+    [self reloadData];
+}
+
+- (void)deSelectAllItems
+{
+    NSString *string = self.assetCollection.localizedTitle;
+    NSArray <PHAsset *> *itemsFromAlbum = [self allAssetsFromCurrentAlbum:string];
+    NSArray <PHAsset *> *slectedItemsNotFromAlbum = [self removeDuplicatedAssetsFrom:itemsFromAlbum
+                                                                          withAssets:self.picker.selectedAssets];
+    
+    self.picker.selectedAssets = slectedItemsNotFromAlbum.mutableCopy;
+    
+    [self updateTitle:self.picker.selectedAssets];
+    [self updateButton:self.picker.selectedAssets];
+    [self updateToolbarItems];
+    [self reloadData];
+}
+
+- (BOOL)allItemsAreSelected
+{
+    NSString *string = self.assetCollection.localizedTitle;
+    NSArray <PHAsset *> *allAssetArray = [self allAssetsFromCurrentAlbum:string];
+    
+    NSArray <PHAsset *> *toSelect = allAssetArray;
+    NSArray <PHAsset *> *alreadySelected = self.picker.selectedAssets;
+    NSArray <PHAsset *> *result = [self removeDuplicatedAssetsFrom:alreadySelected withAssets:toSelect];
+    
+    return (result.count == 0);
+}
+
+- (NSArray <PHAsset *> *)allAssetsFromCurrentAlbum:(NSString *)albumName
+{
+    NSMutableArray <PHAsset *> *allAssetArray = @[].mutableCopy;
+    PHFetchResult<PHAssetCollection *> *fetchResults = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
+                                                                                                subtype:PHAssetCollectionSubtypeAny
+                                                                                                options:nil];
+    
+    for (PHAssetCollection *collection in fetchResults) {
+        if ([collection.localizedTitle isEqualToString:albumName]) {
+            PHFetchResult<PHAsset *> *assets = [PHAsset fetchAssetsInAssetCollection:collection
+                                                                             options:nil];
+            for (PHAsset *asset in assets) {
+                [allAssetArray addObject:asset];
+            }
+        }
+    }
+    
+    return allAssetArray.copy;
+}
+
+- (NSArray <PHAsset *> *)removeDuplicatedAssetsFrom:(NSArray <PHAsset *> *)alreadySelectedAssets
+                                         withAssets:(NSArray <PHAsset *> *)toSelectAssets
+{
+    NSMutableArray <PHAsset *> *result = @[].mutableCopy;
+    BOOL addAsset = YES;
+    for (PHAsset *toSelectAsset in toSelectAssets) {
+        for (PHAsset *alreadySelected in alreadySelectedAssets) {
+            if ([toSelectAsset isEqual:alreadySelected]) {
+                addAsset = NO;
+            }
+        }
+        
+        if (addAsset) {
+            [result addObject:toSelectAsset];
+        } else {
+            addAsset = YES;
+        }
+    }
+    
+    return result;
 }
 
 

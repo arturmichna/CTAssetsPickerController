@@ -425,6 +425,7 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
             }
             
             [self.footer bind:self.fetchResult];
+            [self updateToolbarItems];
             
             if (self.fetchResult.count == 0)
                 [self showNoAssets];

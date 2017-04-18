@@ -212,7 +212,7 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
                                                                     style:UIBarButtonItemStyleDone
                                                                    target:self
                                                                    action:@selector(closePicker)];
-    closePicker.tintColor = [UIColor whiteColor];
+    
     self.viewToolbar.items = @[closePicker, flexibleSpace];
     [self.view addSubview:self.viewToolbar];
 }
@@ -242,6 +242,10 @@ CGFloat const CTAssetsGridViewBottomInset = 44.0f;
     [self reloadData];
 }
 
+- (void)closePicker
+{
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
 
 
 
